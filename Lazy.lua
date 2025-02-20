@@ -22,11 +22,13 @@ defaults = {}
 defaults.spell = ""
 defaults.spell_active = false
 defaults.weaponskill = ""
-defaults.weaponskill_active = false
-defaults.autotarget = false
+defaults.weaponskill_active = true
+defaults.autotarget = true
 defaults.target = {}
 
 settings = config.load(defaults)
+
+local PlayerH
 
 windower.register_event('incoming chunk', function(id, data)
     if id == 0x028 then
@@ -84,7 +86,7 @@ windower.register_event('addon command', function (...)
 			windower.add_to_chat(3,"Autotarget: False")
 		end
 	elseif args[1] == "target" then
-		if args[2] then  
+		if args[2] then
         		table.insert(settings.target, args[2]) -- Add target to the list if it's not already there
         		windower.add_to_chat(3, "Target added: " .. args[2])
     		end
@@ -94,8 +96,10 @@ windower.register_event('addon command', function (...)
 			windower.add_to_chat(11,"Use Weaponskill: "..tostring(settings.weaponskill_active))
 		elseif args[2] == "on" then
 			settings.weaponskill_active = true
+			windower.add_to_chat(11,"Use Weaponskill: "..tostring(settings.weaponskill_active))
 		elseif args[2] == "off" then
 			settings.weaponskill_active = false
+			windower.add_to_chat(11,"Use Weaponskill: "..tostring(settings.weaponskill_active))
 		else
 			settings.weaponskill = args[2]
 			settings.weaponskill_active = true
@@ -105,20 +109,21 @@ windower.register_event('addon command', function (...)
 	end
 end)
 
-function HeadingTo(X,Y)
-	local X = X - windower.ffxi.get_mob_by_id(windower.ffxi.get_player().id).x
-	local Y = Y - windower.ffxi.get_mob_by_id(windower.ffxi.get_player().id).y
-	local H = math.atan2(X,Y)
-	return H - 1.5708
+function HeadingTo(destX, destY)
+    local deltaX = destX - windower.ffxi.get_mob_by_id(windower.ffxi.get_player().id).x
+    local deltaY = destY - windower.ffxi.get_mob_by_id(windower.ffxi.get_player().id).y
+    local H = math.atan2(deltaX, deltaY)
+    return H - 1.5708
 end
 
 function TurnToTarget()
-	local destX = windower.ffxi.get_mob_by_target('t').x
-	local destY = windower.ffxi.get_mob_by_target('t').y
-	local direction = math.abs(PlayerH - math.deg(HeadingTo(destX,destY)))
-	if direction > 10 then
-		windower.ffxi.turn(HeadingTo(destX,destY))
-	end
+    local destX = windower.ffxi.get_mob_by_target('t').x
+    local destY = windower.ffxi.get_mob_by_target('t').y
+
+    local direction = math.abs(PlayerH - math.deg(HeadingTo(destX, destY)))
+    if direction > 10 then
+        windower.ffxi.turn(HeadingTo(destX, destY))
+    end
 end
 
 function Find_Nearest_Target(targets)
@@ -129,15 +134,15 @@ function Find_Nearest_Target(targets)
 	-- Loop through all targets in the table
 	for _, target in ipairs(targets) do
 		for key,mob in pairs(marray) do
-			if mob["valid_target"] and mob["hpp"] == 100 then
-				local mob_name = string.lower(mob["name"])
+			if mob.valid_target and mob.hpp == 100 then
+				local mob_name = string.lower(mob.name)
                	 		local target_name = string.lower(target)
 		-- Check if the mob name contains the target string (partial match)
 				if string.find(mob_name, target_name, 1, true) then
-					local distance = math.sqrt(mob["distance"])
+					local distance = math.sqrt(mob.distance)
 					 if dist_targ == -1 or distance < dist_targ then
 						id_targ = key
-						dist_targ = math.sqrt(mob["distance"])
+						dist_targ = math.sqrt(mob.distance)
 					end
 				end
 			end
@@ -147,13 +152,13 @@ function Find_Nearest_Target(targets)
 end
 
 function Check_Distance()
-	local distance = windower.ffxi.get_mob_by_target('t').distance:sqrt()
-	if distance > 3 then
-		TurnToTarget()
+    local distance = windower.ffxi.get_mob_by_target('t').distance:sqrt()
+    if distance > 3 then
+        TurnToTarget()
 		windower.ffxi.run()
-	else
-		windower.ffxi.run(false)
-	end
+    else
+        windower.ffxi.run(false)
+    end
 end
 
 function test()
